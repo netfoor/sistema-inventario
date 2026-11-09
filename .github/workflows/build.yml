@@ -1,0 +1,28 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v7
+
+      - name: Preparar uv y Python
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          python-version: "3.13"
+
+      - name: Verificar e instalar dependencias
+        run: uv sync --locked --no-dev
+
+      - name: Compilar el código fuente
+        run: uv run --no-sync python -m compileall -f -q src
+
+      - name: Ejecutar el programa
+        run: uv run --no-sync python src/producto.py
