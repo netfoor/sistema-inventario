@@ -1,0 +1,26 @@
+name: Pruebas
+
+on:
+  push:
+    branches: [main, "test/**", "feature/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener el código
+        uses: actions/checkout@v7
+
+      - name: Instalar uv y Python
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - name: Instalar dependencias
+        run: uv sync --locked
+
+      - name: Ejecutar pruebas
+        run: uv run pytest -v
