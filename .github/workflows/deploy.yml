@@ -1,0 +1,56 @@
+name: Despliegue del Sistema de Inventario
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Etiqueta de la versión liberada que se va a desplegar (por ejemplo v1.0.2)"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ inputs.version }}
+      PAQUETE: sistema-inventario-${{ inputs.version }}.zip
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+    steps:
+      - name: Descargar versión liberada
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "$VERSION" --repo "$GITHUB_REPOSITORY" --pattern "$PAQUETE"
+
+      - name: Preparar conexión SSH
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
+
+      - name: Transferir paquete al servidor
+        run: scp -i ~/.ssh/deploy_key -P "$DEPLOY_PORT" "$PAQUETE" "$DEPLOY_USER@$DEPLOY_HOST:sistema-inventario/"
+
+      - name: Preparar versión en el servidor
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" bash -s -- "$VERSION" <<'REMOTO'
+          set -e
+          cd ~/sistema-inventario
+          rm -rf "version-$1"
+          mkdir -p "version-$1"
+          unzip -o "sistema-inventario-$1.zip" -d "version-$1"
+          ln -sfn "version-$1" actual
+          ls -R "version-$1"
+          REMOTO
+
+      - name: Verificar el sistema en el servidor
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            'cd ~/sistema-inventario/actual && python3 --version && python3 src/producto.py && ls -l ~/sistema-inventario'
