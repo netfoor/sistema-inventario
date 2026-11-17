@@ -53,4 +53,6 @@ jobs:
       - name: Verificar el sistema en el servidor
         run: |
           ssh -i ~/.ssh/deploy_key -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
-            'cd ~/sistema-inventario/actual && python3 --version && python3 src/producto.py && ls -l ~/sistema-inventario'
+            'cd ~/sistema-inventario/actual && python3 --version && python3 src/producto.py \
+             && if [ -f src/main.py ]; then printf "2\n0\n" | python3 src/main.py; fi \
+             && ls -l ~/sistema-inventario/'
