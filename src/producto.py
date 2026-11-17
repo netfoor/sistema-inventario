@@ -9,7 +9,7 @@ class Producto:
 
     def mostrar_informacion(self):
         print(f"Código: {self.codigo}")
-        print(f"Nombre: {self.nombre.upper()}")
+        print(f"Nombre: {self.nombre}")
         print(f"Precio: ${self.precio:.2f}")
         print(f"Existencia: {self.existencia} unidades")
         print("Producto en inventario")
