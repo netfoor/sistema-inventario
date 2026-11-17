@@ -1,0 +1,39 @@
+name: Liberacion del Sistema de Inventario
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  liberar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v7
+
+      - name: Preparar uv y Python
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          python-version: "3.13"
+
+      - name: Instalar dependencias
+        run: uv sync --locked
+
+      - name: Ejecutar pruebas
+        run: uv run pytest -v
+
+      - name: Crear paquete
+        run: zip -r "sistema-inventario-${GITHUB_REF_NAME}.zip" src -x "*__pycache__*"
+
+      - name: Publicar version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "sistema-inventario-${GITHUB_REF_NAME}.zip" \
+            --verify-tag \
+            --title "$GITHUB_REF_NAME - Sistema de Inventario" \
+            --generate-notes
